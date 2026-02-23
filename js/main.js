@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
     cartCount.style.marginBottom = '20px';
     productsContainer.parentNode.insertBefore(cartCount, productsContainer);
 
-    // Загружаем корзину из localStorage
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
     function updateCartCount() {
@@ -18,19 +17,42 @@ document.addEventListener('DOMContentLoaded', () => {
             products.forEach(p => {
                 const div = document.createElement('div');
                 div.className = 'product';
+                
                 div.innerHTML = `
                     <h3>${p.name}</h3>
                     <p>${p.price} ₽</p>
+                    <p class="stock">В наличии: ${p.stock}</p>
                     <button>Добавить в корзину</button>
                 `;
+
                 const btn = div.querySelector('button');
+                const stockEl = div.querySelector('.stock');
+
                 btn.addEventListener('click', () => {
-                    cart.push(p);
-                    localStorage.setItem('cart', JSON.stringify(cart));
-                    updateCartCount();
+                    if (p.stock > 0) {
+                        cart.push(p);
+                        p.stock--;
+                        stockEl.textContent = `В наличии: ${p.stock}`;
+                        localStorage.setItem('cart', JSON.stringify(cart));
+                        updateCartCount();
+                    } else {
+                        alert('Извините, товара нет в наличии!');
+                    }
                 });
+
+                // Кнопка пополнения склада
+                const replenishBtn = document.createElement('button');
+                replenishBtn.textContent = 'Пополнить склад';
+                replenishBtn.style.marginLeft = '5px';
+                replenishBtn.addEventListener('click', () => {
+                    p.stock += 5; // увеличиваем на 5 единиц
+                    stockEl.textContent = `В наличии: ${p.stock}`;
+                });
+                div.appendChild(replenishBtn);
+
                 productsContainer.appendChild(div);
             });
+
             updateCartCount();
         })
         .catch(err => console.error('Ошибка загрузки товаров', err));
