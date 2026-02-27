@@ -1,96 +1,88 @@
-// Роли
-const roleEl = document.getElementById('current-role');
-const adminBtn = document.getElementById('login-admin');
-const userBtn = document.getElementById('login-user');
+document.addEventListener('DOMContentLoaded', async () => {
+  const roleEl = document.getElementById('current-role');
+  const adminBtn = document.getElementById('login-admin');
+  const userBtn = document.getElementById('login-user');
+  const productsContainer = document.getElementById('products');
+  const cartCount = document.getElementById('cart-count');
+  const statusMessage = document.getElementById('status-message');
 
-let role = localStorage.getItem('role') || 'user';
+  function setStatus(message) {
+    statusMessage.textContent = message;
+  }
 
-function updateRole() {
-    roleEl.textContent = `Current role: ${role}`;
-}
+  function currentRoleText(role) {
+    return role === toyshopApi.ROLES.ADMIN ? 'Текущая роль: admin' : 'Текущая роль: user';
+  }
 
-adminBtn.addEventListener('click', () => {
-    role = 'admin';
-    localStorage.setItem('role', role);
-    updateRole();
-});
+  function updateRoleLabel() {
+    roleEl.textContent = currentRoleText(toyshopApi.getRole());
+  }
 
-userBtn.addEventListener('click', () => {
-    role = 'user';
-    localStorage.setItem('role', role);
-    updateRole();
-});
+  function updateCartCount() {
+    cartCount.textContent = `В корзине: ${toyshopApi.getCartCount()} шт.`;
+  }
 
-updateRole();
-document.addEventListener('DOMContentLoaded', () => {
-    const productsContainer = document.getElementById('products');
-    const cartCount = document.createElement('div');
-    cartCount.id = 'cart-count';
-    cartCount.style.marginBottom = '20px';
-    productsContainer.parentNode.insertBefore(cartCount, productsContainer);
+  function createProductCard(product) {
+    const div = document.createElement('article');
+    div.className = 'product';
 
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    const role = toyshopApi.getRole();
+    const canBuy = role === toyshopApi.ROLES.USER;
 
-    function updateCartCount() {
-        cartCount.textContent = `В корзине: ${cart.length} товар(ов)`;
-    }
+    div.innerHTML = `
+      <h3>${product.name}</h3>
+      <p>Цена: ${product.price} ₽</p>
+      <p class="stock">В наличии: ${product.stock}</p>
+      <button type="button" ${!canBuy ? 'disabled' : ''}>Добавить в корзину</button>
+    `;
 
-    fetch('data/products.json')
-        .then(response => response.json())
-        .then(products => {
-            products.forEach(p => {
-                const div = document.createElement('div');
-                div.className = 'product';
-                
-                div.innerHTML = `
-                    <h3>${p.name}</h3>
-                    <p>${p.price} ₽</p>
-                    <p class="stock">В наличии: ${p.stock}</p>
-                    <button>Добавить в корзину</button>
-                `;
-
-                const btn = div.querySelector('button');
-                const stockEl = div.querySelector('.stock');
-
-                btn.addEventListener('click', () => {
-
-    // Проверка роли
-    if (role !== 'user') {
-        alert('Only users can buy products');
+    const button = div.querySelector('button');
+    button.addEventListener('click', () => {
+      const result = toyshopApi.addToCart(product.id);
+      if (!result.ok) {
+        setStatus(result.message);
         return;
+      }
+      renderProducts();
+      updateCartCount();
+      setStatus('Товар добавлен в корзину.');
+    });
+
+    return div;
+  }
+
+  function renderProducts() {
+    const products = toyshopApi.getProducts();
+    productsContainer.innerHTML = '';
+    products.forEach(product => {
+      productsContainer.appendChild(createProductCard(product));
+    });
+
+    if (toyshopApi.getRole() === toyshopApi.ROLES.ADMIN) {
+      setStatus('Роль admin: покупки на витрине отключены. Управление остатками доступно на странице Admin.');
     }
+  }
 
-    // Проверка остатка
-    if (p.stock > 0) {
+  adminBtn.addEventListener('click', () => {
+    toyshopApi.setRole(toyshopApi.ROLES.ADMIN);
+    updateRoleLabel();
+    renderProducts();
+  });
 
-        cart.push(p);
-        p.stock--;
+  userBtn.addEventListener('click', () => {
+    toyshopApi.setRole(toyshopApi.ROLES.USER);
+    updateRoleLabel();
+    renderProducts();
+    setStatus('');
+  });
 
-        stockEl.textContent = `В наличии: ${p.stock}`;
-
-        localStorage.setItem('cart', JSON.stringify(cart));
-        updateCartCount();
-
-    } else {
-        alert('Извините, товара нет в наличии!');
-    }
-
-});
-
-                // Кнопка пополнения склада
-                const replenishBtn = document.createElement('button');
-                replenishBtn.textContent = 'Пополнить склад';
-                replenishBtn.style.marginLeft = '5px';
-                replenishBtn.addEventListener('click', () => {
-                    p.stock += 5; // увеличиваем на 5 единиц
-                    stockEl.textContent = `В наличии: ${p.stock}`;
-                });
-                div.appendChild(replenishBtn);
-
-                productsContainer.appendChild(div);
-            });
-
-            updateCartCount();
-        })
-        .catch(err => console.error('Ошибка загрузки товаров', err));
+  try {
+    await toyshopApi.ensureProductsLoaded();
+    updateRoleLabel();
+    updateCartCount();
+    renderProducts();
+  } catch (error) {
+    console.error(error);
+    setStatus('Ошибка загрузки каталога.');
+  }
 });

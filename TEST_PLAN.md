@@ -2,128 +2,85 @@
 
 **Project:** ToyShop Mini E-Commerce  
 **Prepared by:** Semyon Samsonov  
-**Date:** 21/02/2026
-
----
+**Date:** 27/02/2026
 
 ## 1. Introduction / Введение
-This document describes the scope, approach, resources, and schedule of testing activities for the ToyShop QA Lab project.
-
-_Этот раздел объясняет цель тестирования и что мы собираемся проверять._
-
----
+This document describes scope and approach for manual and basic automated checks of the ToyShop project.
 
 ## 2. Objectives / Цели
-- Verify that all products are displayed correctly on the main page.  
-- Ensure that the "Add to Cart" button works for all products.  
-- Check that the cart page shows all added products with correct prices.  
-- Ensure the "Delete" button removes items correctly.  
-- Validate the total price calculation.  
-- Ensure data persists in localStorage after page reload.  
-- Verify navigation between pages (index.html ↔ cart.html).  
-
-_Здесь перечисляем конкретные цели тестирования._
-
----
+- Verify product catalog rendering.
+- Verify cart operations (`add`, `remove one`, `remove line`) and total price calculation.
+- Verify stock synchronization between storefront, cart, and admin panel.
+- Verify role-based UI restrictions for stock management.
+- Verify localStorage persistence.
+- Verify basic quality gates: lint, format, smoke tests.
 
 ## 3. Scope / Область тестирования
-### In Scope / Включено:
-- UI functionality (buttons, links, cart counter).  
-- Data persistence (localStorage).  
-- Product display and price accuracy.  
-- Navigation between pages.  
+### In Scope / Включено
+- UI flows in `index.html`, `cart.html`, `admin.html`.
+- LocalStorage data consistency.
+- Basic static checks in CI.
 
-### Out of Scope / Не включено:
-- Backend API (since we use local JSON files).  
-- Payment processing.  
-- User authentication / login.  
-
-_Уточняем, что мы тестируем и что не тестируем, чтобы не распыляться._
-
----
+### Out of Scope / Не включено
+- Real backend authentication/authorization.
+- Payment processing.
+- Multi-user server-side concurrency.
 
 ## 4. Test Environment / Среда тестирования
-- Browser: Chrome (latest version)  
-- OS: macOS  
-- Local server: Python HTTP server on port 5500  
-- Tools: VS Code, Chrome DevTools, Postman (for future API tests)  
-
-_Среда, где будет выполняться тестирование._
-
----
+- Browser: Chrome (latest)
+- OS: macOS
+- Local server: Python HTTP server on port 5500
+- Node.js: 20+
 
 ## 5. Test Approach / Подход к тестированию
-- Manual testing for all functional scenarios.  
-- Visual verification of UI elements.  
-- Console monitoring in DevTools for errors.  
-- LocalStorage inspection to confirm data persistence.  
-
-_Как мы будем тестировать: вручную, через консоль, проверка localStorage и UI._
-
----
+- Manual exploratory testing for UI and role scenarios.
+- localStorage inspection via DevTools.
+- Automated smoke checks with `node --test`.
+- CI validation for lint/format/tests.
 
 ## 6. Test Items / Объекты тестирования
-- `index.html` – main page with products  
-- `cart.html` – cart page with delete functionality  
-- `css/` – styling  
-- `js/main.js` – main page logic  
-- `js/cart.js` – cart logic  
-- `data/products.json` – product data  
+- `index.html`, `cart.html`, `admin.html`
+- `js/api.js`, `js/main.js`, `js/cart.js`, `js/admin.js`
+- `data/products.json`
+- `tests/smoke.test.js`
 
-_Что именно мы тестируем._
+## 7. Example Test Cases / Примеры тест-кейсов
+### TC-001 Add product to cart
+1. Open `index.html`.
+2. Ensure role is `user`.
+3. Add product to cart.
+4. Open `cart.html`.
 
----
+**Expected:** product appears, quantity increments, total updates.
 
-## 7. Test Cases / Тест-кейсы
-### Example Test Case 1
-**Title:** Add a single product to the cart  
-**Steps:**  
-1. Open `index.html`  
-2. Click "Add to Cart" on a product  
-3. Check that cart counter increments  
-4. Open `cart.html`  
-5. Verify product appears with correct price  
+### TC-002 Remove one item from cart
+1. Have quantity >= 2 for one product.
+2. Click `Убрать 1 шт.`.
 
-**Expected Result:**  
-Product is added, counter updated, and product visible in cart.
+**Expected:** quantity decreases by 1, total decreases, stock returns by 1.
 
-_Пример тест-кейса: что делать и какой результат ожидается._
+### TC-003 Remove line from cart
+1. Click `Удалить позицию`.
 
-### Example Test Case 2
-**Title:** Remove a product from the cart  
-**Steps:**  
-1. Open `cart.html` with products in cart  
-2. Click "Delete" button on a product  
-3. Verify product is removed  
-4. Check total price recalculated  
+**Expected:** item fully removed from cart, stock restored by removed quantity.
 
-**Expected Result:**  
-Product removed, total price updated, cart counter synced.
+### TC-004 Admin stock replenishment
+1. Switch role to `admin` on main page.
+2. Open `admin.html`.
+3. Add stock for a product.
+4. Return to `index.html`.
 
-_Ещё один тест-кейс для проверки удаления и пересчёта суммы._
-
----
+**Expected:** updated stock is visible in storefront.
 
 ## 8. Risks / Риски
-- Incorrect price calculation in JS  
-- Items not saved correctly in localStorage  
-- Browser compatibility issues  
-
-_Что может пойти не так._
-
----
+- Data drift if localStorage contains stale products.
+- Frontend-only role model can be bypassed.
+- No backend integration coverage.
 
 ## 9. Schedule / График
-- Manual test execution: 1–2 days  
-- Bug reporting and fixes: ongoing  
-- Review and final test report: end of week  
-
-_Примерное время на тестирование._
-
----
+- Manual regression: 1 day
+- Automated checks in CI: on every push/PR
+- Bug review: ongoing
 
 ## 10. References / Ссылки
-- GitHub repository: [ToyShop QA Lab](https://github.com/semyonios/Toyshop-Qa-Lab)  
-- VS Code, Chrome DevTools, Python HTTP server  
-
-_Ссылки на проект и инструменты._
+- GitHub repository: [ToyShop QA Lab](https://github.com/semyonios/Toyshop-Qa-Lab)

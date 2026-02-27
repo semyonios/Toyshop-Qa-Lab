@@ -1,0 +1,17 @@
+{
+  "name": "toyshop-qa-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ToyShop QA Lab with basic quality gates",
+  "scripts": {
+    "lint": "eslint js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "node --test tests"
+  },
+  "devDependencies": {
+    "eslint": "^9.21.0",
+    "globals": "^15.15.0",
+    "prettier": "^3.5.2"
+  }
+}

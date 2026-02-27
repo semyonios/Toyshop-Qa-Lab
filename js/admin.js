@@ -1,69 +1,62 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  const container = document.getElementById('admin-products');
+  const roleInfo = document.getElementById('admin-role');
+  const status = document.getElementById('admin-status');
 
-    const container = document.getElementById('admin-products');
-    const roleInfo = document.getElementById('admin-role');
+  roleInfo.textContent = `Текущая роль: ${toyshopApi.getRole()}`;
 
-    let role = localStorage.getItem('role') || 'user';
+  if (toyshopApi.getRole() !== toyshopApi.ROLES.ADMIN) {
+    container.innerHTML = '<h2>Доступ запрещен. Нужна роль admin.</h2>';
+    return;
+  }
 
-    roleInfo.textContent = `Current role: ${role}`;
+  function setStatus(message) {
+    status.textContent = message;
+  }
 
-    // Проверка доступа
-    if (role !== 'admin') {
-        container.innerHTML = '<h2>❌ Access denied. Admins only.</h2>';
-        return;
-    }
+  function renderProducts() {
+    const products = toyshopApi.getProducts();
+    container.innerHTML = '';
 
-    // Загружаем товары
-    fetch('data/products.json')
-        .then(res => res.json())
-        .then(products => {
+    products.forEach(product => {
+      const div = document.createElement('article');
+      div.className = 'product';
 
-            products.forEach(p => {
+      div.innerHTML = `
+        <h3>${product.name}</h3>
+        <p>Текущий остаток: <strong class="stock-value">${product.stock}</strong></p>
+        <label>
+          Пополнить на:
+          <input type="number" min="1" value="1" inputmode="numeric">
+        </label>
+        <button type="button">Пополнить</button>
+      `;
 
-                const div = document.createElement('div');
-                div.className = 'product';
+      const input = div.querySelector('input');
+      const button = div.querySelector('button');
 
-                div.innerHTML = `
-                    <h3>${p.name}</h3>
+      button.addEventListener('click', () => {
+        const amount = Number.parseInt(input.value, 10);
+        const result = toyshopApi.replenishStock(product.id, amount);
 
-                    <p>
-                        Stock:
-                        <span class="stock-value">${p.stock}</span>
-                    </p>
+        if (!result.ok) {
+          setStatus(result.message);
+          return;
+        }
 
-                    <input type="number" min="1" value="1">
+        setStatus(`Остаток товара «${product.name}» обновлен: ${result.stock} шт.`);
+        renderProducts();
+      });
 
-                    <button>Add stock</button>
-                `;
+      container.appendChild(div);
+    });
+  }
 
-                const input = div.querySelector('input');
-                const btn = div.querySelector('button');
-                const stockEl = div.querySelector('.stock-value');
-
-                btn.addEventListener('click', () => {
-
-                    let value = Number(input.value);
-
-                    if (value <= 0) {
-                        alert('Enter valid number');
-                        return;
-                    }
-
-                    p.stock += value;
-
-                    stockEl.textContent = p.stock;
-
-                    alert('Stock updated (local session only)');
-                });
-
-                container.appendChild(div);
-
-            });
-
-        })
-        .catch(err => {
-            console.error(err);
-            container.innerHTML = '<p>Error loading products</p>';
-        });
-
+  try {
+    await toyshopApi.ensureProductsLoaded();
+    renderProducts();
+  } catch (error) {
+    console.error(error);
+    setStatus('Не удалось загрузить товары.');
+  }
 });

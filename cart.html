@@ -1,28 +1,29 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Корзина - ToyShop</title>
-    <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Корзина - ToyShop</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-
-<header>
-    <h1>🧸 ToyShop</h1>
+  <header>
+    <h1>ToyShop</h1>
     <nav>
-        <a href="index.html">Главная</a>
-        <a href="cart.html">Корзина</a>
+      <a href="index.html">Главная</a>
+      <a href="cart.html">Корзина</a>
+      <a href="admin.html">Admin</a>
     </nav>
-</header>
+  </header>
 
-<main>
+  <main>
     <h2>Ваша корзина</h2>
-    <div id="cart-items">
-        <!-- Здесь будут товары корзины -->
-    </div>
-    <p id="total-price">Итого: 0 ₽</p>
-</main>
+    <p id="cart-status" class="status" aria-live="polite"></p>
+    <div id="cart-items"></div>
+    <p id="total-price" aria-live="polite">Итого: 0 ₽</p>
+  </main>
 
-<script src="js/cart.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/cart.js"></script>
 </body>
 </html>

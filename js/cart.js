@@ -1,39 +1,83 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const cartContainer = document.getElementById('cart-items');
-    const totalPriceEl = document.getElementById('total-price');
+document.addEventListener('DOMContentLoaded', async () => {
+  const cartContainer = document.getElementById('cart-items');
+  const totalPriceEl = document.getElementById('total-price');
+  const statusEl = document.getElementById('cart-status');
 
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+  function setStatus(message) {
+    statusEl.textContent = message;
+  }
 
-    function renderCart() {
-        cartContainer.innerHTML = '';
-        let total = 0;
+  function renderCart() {
+    const cart = toyshopApi.getCart();
+    const products = toyshopApi.getProducts();
 
-        if (cart.length === 0) {
-            cartContainer.innerHTML = '<p>Корзина пуста</p>';
-            totalPriceEl.textContent = 'Итого: 0 ₽';
-            return;
-        }
+    cartContainer.innerHTML = '';
 
-        cart.forEach((item, index) => {
-            total += item.price;
-            const div = document.createElement('div');
-            div.className = 'product';
-            div.innerHTML = `
-                <h3>${item.name}</h3>
-                <p>${item.price} ₽</p>
-                <button data-index="${index}">Удалить</button>
-            `;
-            const btn = div.querySelector('button');
-            btn.addEventListener('click', () => {
-                cart.splice(index, 1);
-                localStorage.setItem('cart', JSON.stringify(cart));
-                renderCart();
-            });
-            cartContainer.appendChild(div);
-        });
-
-        totalPriceEl.textContent = `Итого: ${total} ₽`;
+    if (cart.length === 0) {
+      cartContainer.innerHTML = '<p>Корзина пуста.</p>';
+      totalPriceEl.textContent = 'Итого: 0 ₽';
+      return;
     }
 
+    let total = 0;
+
+    cart.forEach(cartItem => {
+      const product = products.find(item => item.id === cartItem.id);
+      if (!product) {
+        return;
+      }
+
+      const subtotal = product.price * cartItem.qty;
+      total += subtotal;
+
+      const div = document.createElement('article');
+      div.className = 'product';
+
+      div.innerHTML = `
+        <h3>${product.name}</h3>
+        <p>Цена: ${product.price} ₽</p>
+        <p>Количество: ${cartItem.qty}</p>
+        <p>Сумма: ${subtotal} ₽</p>
+        <div class="cart-actions">
+          <button type="button" class="remove-one">Убрать 1 шт.</button>
+          <button type="button" class="remove-line">Удалить позицию</button>
+        </div>
+      `;
+
+      const removeOneBtn = div.querySelector('.remove-one');
+      const removeLineBtn = div.querySelector('.remove-line');
+
+      removeOneBtn.addEventListener('click', () => {
+        const result = toyshopApi.removeOneFromCart(product.id);
+        if (!result.ok) {
+          setStatus(result.message);
+          return;
+        }
+        setStatus('Один товар удален из корзины.');
+        renderCart();
+      });
+
+      removeLineBtn.addEventListener('click', () => {
+        const result = toyshopApi.removeLineFromCart(product.id);
+        if (!result.ok) {
+          setStatus(result.message);
+          return;
+        }
+        setStatus('Позиция удалена из корзины.');
+        renderCart();
+      });
+
+      cartContainer.appendChild(div);
+    });
+
+    totalPriceEl.textContent = `Итого: ${total} ₽`;
+  }
+
+  try {
+    await toyshopApi.ensureProductsLoaded();
     renderCart();
+  } catch (error) {
+    console.error(error);
+    setStatus('Ошибка загрузки корзины.');
+  }
 });
